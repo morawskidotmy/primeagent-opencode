@@ -79,7 +79,7 @@ prime-agent shutdown [--force]  # stop every agent and service
 ## Uninstall
 
 ```sh
-sh <(curl -fsSL https://raw.githubusercontent.com/morawskidotmy/primeagent-opencode/main/uninstall.sh)
+curl -fsSL https://raw.githubusercontent.com/morawskidotmy/primeagent-opencode/main/uninstall.sh | sh
 ```
 
-Restores backed-up files, removes the integration, and leaves the `prime-agent` CLI installed. Add `--project` for project-scope removal.
+Restores backed-up files, removes the integration, and leaves the `prime-agent` CLI installed. Add `--project` for project-scope removal: `curl -fsSL .../uninstall.sh | sh -s -- --project`.

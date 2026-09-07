@@ -31,18 +31,28 @@ step "project uninstall (restore backup)"
 [ -f "$tmp/proj/.opencode/agent/prime.md" ] || fail "uninstall removed file without restoring backup"
 [ ! -f "$tmp/proj/.opencode/agent/prime.md.primeagent-opencode.bak" ] || fail "backup not consumed by uninstall"
 
+step "project uninstall (plain removal)"
+( cd "$tmp/proj" && sh "$REPO/uninstall.sh" --project >/dev/null )
+[ ! -f "$tmp/proj/.opencode/agent/prime.md" ] || fail "plain uninstall left agent file behind"
+[ ! -d "$tmp/proj/.opencode/agent" ] || fail "plain uninstall left empty agent dir"
+[ ! -d "$tmp/proj/.opencode/command" ] || fail "plain uninstall left empty command dir"
+
 step "global install (fake XDG_CONFIG_HOME)"
 mkdir -p "$tmp/home/.config"
 ( XDG_CONFIG_HOME="$tmp/home/.config" sh "$REPO/install.sh" --skip-prime >/dev/null )
 [ -f "$tmp/home/.config/opencode/agent/prime.md" ] || fail "global install missing agent file"
 
 step "global install aborts on read-only target"
-mkdir -p "$tmp/rohome/.config/opencode"
-chmod 555 "$tmp/rohome/.config/opencode"
-if XDG_CONFIG_HOME="$tmp/rohome/.config" sh "$REPO/install.sh" --skip-prime >/dev/null 2>&1; then
-  fail "expected read-only global target to abort"
+if [ "$(id -u)" -eq 0 ]; then
+  echo "   skipped: running as root"
+else
+  mkdir -p "$tmp/rohome/.config/opencode"
+  chmod 555 "$tmp/rohome/.config/opencode"
+  if XDG_CONFIG_HOME="$tmp/rohome/.config" sh "$REPO/install.sh" --skip-prime >/dev/null 2>&1; then
+    fail "expected read-only global target to abort"
+  fi
+  chmod 755 "$tmp/rohome/.config/opencode"
 fi
-chmod 755 "$tmp/rohome/.config/opencode"
 
 step "self-install is a clean no-op"
 sh "$REPO/install.sh" --project --skip-prime >/dev/null

@@ -43,7 +43,8 @@ prime-agent --mode json "Refactor the config module" 2>/dev/null \
 ```
 
 First line is `{"type":"session",...}`; then `agent_start`, `tool_execution_start/end`,
-`message_end`, `agent_end` events. Parse `agent_end` for the final messages.
+`message_end`, `agent_end` events. Parse `agent_end` for the final messages. `jq` is
+optional - without it, just `tail -n 50` the stream and read the tail.
 
 ## Sessions and background agents
 

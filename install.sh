@@ -40,9 +40,15 @@ USAGE
   esac
 done
 
-log() { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
-warn() { printf '\033[1;33mwarning:\033[0m %s\n' "$*" >&2; }
-die() { printf '\033[1;31merror:\033[0m %s\n' "$*" >&2; exit 1; }
+if [ -t 1 ] && [ -t 2 ]; then
+  log() { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
+  warn() { printf '\033[1;33mwarning:\033[0m %s\n' "$*" >&2; }
+  die() { printf '\033[1;31merror:\033[0m %s\n' "$*" >&2; exit 1; }
+else
+  log() { printf '==> %s\n' "$*"; }
+  warn() { printf 'warning: %s\n' "$*" >&2; }
+  die() { printf 'error: %s\n' "$*" >&2; exit 1; }
+fi
 
 # ---------------------------------------------------------------------------
 # Locate source files: a local checkout, or a fresh tarball (curl | sh case).
@@ -98,12 +104,16 @@ install_file() {
   if [ "$src" -ef "$dest" ]; then
     return 0
   fi
-  if [ -f "$dest" ] && [ ! -f "$dest.primeagent-opencode.bak" ]; then
-    cp "$dest" "$dest.primeagent-opencode.bak"
-    warn "backed up existing $dest to $dest.primeagent-opencode.bak"
-  fi
   mkdir -p "$(dirname "$dest")"
-  cp "$src" "$dest"
+  if [ -f "$dest" ]; then
+    if [ ! -f "$dest.primeagent-opencode.bak" ]; then
+      cp "$dest" "$dest.primeagent-opencode.bak"
+      warn "backed up existing $dest to $dest.primeagent-opencode.bak"
+    elif ! cmp -s "$dest" "$src"; then
+      warn "$dest differs from the incoming file; original backup kept"
+    fi
+  fi
+  cp "$src" "$dest.tmp.$$" && mv "$dest.tmp.$$" "$dest"
 }
 
 install_file "$SRC/.opencode/agent/prime.md"             "$DEST/agent/prime.md"
@@ -126,5 +136,5 @@ Done. Next steps:
      run /prime <task>, or spawn the `prime` subagent.
   3. First interactive launch of the CLI itself: run `prime-agent`, then /login.
 
-Uninstall: sh <(curl -fsSL https://raw.githubusercontent.com/morawskidotmy/primeagent-opencode/main/uninstall.sh)
+Uninstall: curl -fsSL https://raw.githubusercontent.com/morawskidotmy/primeagent-opencode/main/uninstall.sh | sh
 EOF
