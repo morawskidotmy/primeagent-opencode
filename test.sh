@@ -21,20 +21,30 @@ mkdir -p "$tmp/proj"
 for f in $FILES; do
   [ -f "$tmp/proj/.opencode/$f" ] || fail "missing .opencode/$f after project install"
 done
+[ ! -f "$tmp/proj/.opencode/agent/prime.md.primeagent-opencode.bak" ] || fail "fresh install created a backup"
 
-step "project reinstall (backup path)"
-( cd "$tmp/proj" && sh "$REPO/install.sh" --project --skip-prime >/dev/null )
-[ -f "$tmp/proj/.opencode/agent/prime.md.primeagent-opencode.bak" ] || fail "no backup created on reinstall"
+step "identical reinstall is a silent no-op"
+out="$( cd "$tmp/proj" && sh "$REPO/install.sh" --project --skip-prime 2>&1 )"
+case "$out" in
+  *"warning"*) fail "identical reinstall emitted a warning: $out" ;;
+esac
+[ ! -f "$tmp/proj/.opencode/agent/prime.md.primeagent-opencode.bak" ] || fail "identical reinstall created a backup"
+
+step "install over modified file creates backup"
+printf '\n# user edit\n' >> "$tmp/proj/.opencode/agent/prime.md"
+( cd "$tmp/proj" && sh "$REPO/install.sh" --project --skip-prime >/dev/null 2>&1 )
+[ -f "$tmp/proj/.opencode/agent/prime.md.primeagent-opencode.bak" ] || fail "no backup created over modified file"
 
 step "project uninstall (restore backup)"
 ( cd "$tmp/proj" && sh "$REPO/uninstall.sh" --project >/dev/null )
-for f in $FILES; do
-  [ -f "$tmp/proj/.opencode/$f" ] || fail "uninstall did not restore $f"
-done
+[ -f "$tmp/proj/.opencode/agent/prime.md" ] || fail "uninstall did not restore backed-up agent/prime.md"
+[ ! -f "$tmp/proj/.opencode/skills/primeagent/SKILL.md" ] || fail "unmodified file should be plain-removed, not restored"
+[ ! -f "$tmp/proj/.opencode/command/prime.md" ] || fail "unmodified file should be plain-removed, not restored"
 [ ! -f "$tmp/proj/.opencode/agent/prime.md.primeagent-opencode.bak" ] || fail "backup not consumed by uninstall"
 
 step "project uninstall (plain removal)"
 ( cd "$tmp/proj" && sh "$REPO/uninstall.sh" --project >/dev/null )
+[ ! -f "$tmp/proj/.opencode/agent/prime.md" ] || fail "plain uninstall left agent file behind"
 for f in $FILES; do
   [ ! -f "$tmp/proj/.opencode/$f" ] || fail "plain uninstall left $f behind"
 done
@@ -46,8 +56,9 @@ done
 step "reinstall warns on locally modified files"
 mkdir -p "$tmp/edit"
 ( cd "$tmp/edit" && sh "$REPO/install.sh" --project --skip-prime >/dev/null )
-( cd "$tmp/edit" && sh "$REPO/install.sh" --project --skip-prime >/dev/null )
-printf '\n# local edit\n' >> "$tmp/edit/.opencode/agent/prime.md"
+printf '\n# first edit\n' >> "$tmp/edit/.opencode/agent/prime.md"
+( cd "$tmp/edit" && sh "$REPO/install.sh" --project --skip-prime >/dev/null 2>&1 )
+printf '\n# second edit\n' >> "$tmp/edit/.opencode/agent/prime.md"
 out="$( cd "$tmp/edit" && sh "$REPO/install.sh" --project --skip-prime 2>&1 )"
 case "$out" in
   *"local changes"*) : ;;
@@ -56,10 +67,16 @@ esac
 
 step "failed copy leaves no temp litter"
 mkdir -p "$tmp/litter"
-if ( cd "$tmp/litter" && ulimit -f 0 && sh "$REPO/install.sh" --project --skip-prime >/dev/null 2>&1 ); then
-  fail "expected install to fail under ulimit -f 0"
+if ( cd "$tmp/litter" && ulimit -f 0 && echo probe > .probe ) 2>/dev/null; then
+  rm -f "$tmp/litter/.probe"
+  if ( cd "$tmp/litter" && ulimit -f 0 && sh "$REPO/install.sh" --project --skip-prime >/dev/null 2>&1 ); then
+    fail "expected install to fail under ulimit -f 0"
+  fi
+  [ -z "$(find "$tmp/litter" -name '*.tmp.*' 2>/dev/null)" ] || fail "temp litter left behind"
+else
+  rm -f "$tmp/litter/.probe"
+  echo "   skipped: ulimit -f 0 not enforced here"
 fi
-[ -z "$(find "$tmp/litter" -name '*.tmp.*' 2>/dev/null)" ] || fail "temp litter left behind"
 
 step "global install (fake XDG_CONFIG_HOME)"
 mkdir -p "$tmp/home/.config"

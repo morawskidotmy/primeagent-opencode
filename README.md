@@ -64,7 +64,7 @@ Once installed (after restarting OpenCode):
 
 - **`/prime <task>`** - delegate a task headless (`prime-agent -p`), get the result plus a verified diff summary.
 - **`prime` subagent** - OpenCode's primary agents spawn it automatically for Prime Agent work.
-- **Any agent + the skill** - agents that load the `primeagent` skill know how to run one-shot tasks, pipe stdin context, parse `--mode json` event streams, resume sessions (`prime-agent -c`, `-r`), and manage background agents (`agents`, `attach`, `status`, `shutdown`).
+- **Any agent + the skill** - agents that load the `primeagent` skill know how to run one-shot tasks, pipe stdin context, parse `--mode json` event streams, resume sessions headless (`prime-agent -c -p`, `-r <id> -p`), and check background services (`status`, `doctor`). `agents`/`attach`/`shutdown` belong in the user's own terminal.
 
 Useful Prime Agent commands the skill covers:
 

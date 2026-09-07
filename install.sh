@@ -75,8 +75,16 @@ if [ "$SKIP_PRIME" -eq 0 ]; then
     log "prime-agent CLI already installed: $(prime-agent --version 2>&1 || echo 'unknown version')"
   else
     log "Installing prime-agent CLI (PrimeIntellect official installer)..."
-    curl -fsSL "$OFFICIAL_INSTALLER" | sh \
-      || die "prime-agent CLI installation failed; retry manually: curl -fsSL $OFFICIAL_INSTALLER | sh"
+    installer="$(mktemp)"
+    if ! curl -fsSL "$OFFICIAL_INSTALLER" -o "$installer"; then
+      rm -f "$installer"
+      die "could not download $OFFICIAL_INSTALLER"
+    fi
+    if ! sh "$installer"; then
+      rm -f "$installer"
+      die "prime-agent CLI installation failed; retry manually: curl -fsSL $OFFICIAL_INSTALLER | sh"
+    fi
+    rm -f "$installer"
     if ! command -v prime-agent >/dev/null 2>&1; then
       warn "prime-agent not on PATH yet - open a new shell, or add the installer's PATH line to your profile."
     fi
@@ -106,6 +114,9 @@ install_file() {
   fi
   mkdir -p "$(dirname "$dest")"
   if [ -f "$dest" ]; then
+    if cmp -s "$dest" "$src"; then
+      return 0
+    fi
     if [ ! -f "$dest.primeagent-opencode.bak" ]; then
       if ! cp "$dest" "$dest.primeagent-opencode.bak.tmp.$$"; then
         rm -f "$dest.primeagent-opencode.bak.tmp.$$"
@@ -113,7 +124,7 @@ install_file() {
       fi
       mv "$dest.primeagent-opencode.bak.tmp.$$" "$dest.primeagent-opencode.bak"
       warn "backed up existing $dest to $dest.primeagent-opencode.bak"
-    elif ! cmp -s "$dest" "$src"; then
+    else
       warn "$dest has local changes that will be overwritten; pre-install backup kept at $dest.primeagent-opencode.bak"
     fi
   fi
@@ -121,7 +132,10 @@ install_file() {
     rm -f "$dest.tmp.$$"
     die "could not write $dest"
   fi
-  mv "$dest.tmp.$$" "$dest"
+  if ! mv "$dest.tmp.$$" "$dest"; then
+    rm -f "$dest.tmp.$$"
+    die "could not move the new $dest into place"
+  fi
 }
 
 install_file "$SRC/.opencode/agent/prime.md"             "$DEST/agent/prime.md"

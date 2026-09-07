@@ -6,6 +6,7 @@ permission:
   edit: deny
   bash:
     "*": ask
+    "command -v *": allow
     "prime-agent -p*": allow
     "prime-agent --mode json*": allow
     "prime-agent list*": allow
@@ -35,13 +36,14 @@ yourself - Prime Agent does the work; you run it, observe, and report.
    prime-agent --mode json "<task>" > "$out" 2> "$out.err"
    head -n 1 "$out"       # {"type":"session",...,"id":...} - the resume hint
    tail -n 40 "$out"      # final events, including agent_end
+   [ -s "$out" ] || { echo "prime-agent wrote no stdout; stderr was:"; cat "$out.err"; }
    rm -f "$out" "$out.err"
    ```
 
-   Do not discard stderr - an empty stream with hidden stderr is how auth and
-   CLI failures look.
-4. When the task references files or prior output, pipe them as context:
-   `cat <file> | prime-agent -p "<task>"`.
+   If the stream is empty, read the stderr file before deleting it - that is
+   where auth and CLI errors appear.
+4. When the task references files or prior output, feed them via stdin redirect so the
+   whole statement stays auto-approved: `prime-agent -p "<task>" < <file>`.
 5. Inspect effects afterward with read-only commands (`git status`, `git diff`, `ls`) -
    these need user approval under your permission rules.
 6. Report to the caller: Prime Agent's final output, the diff/result you verified, a
