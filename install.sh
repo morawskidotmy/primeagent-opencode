@@ -107,13 +107,21 @@ install_file() {
   mkdir -p "$(dirname "$dest")"
   if [ -f "$dest" ]; then
     if [ ! -f "$dest.primeagent-opencode.bak" ]; then
-      cp "$dest" "$dest.primeagent-opencode.bak"
+      if ! cp "$dest" "$dest.primeagent-opencode.bak.tmp.$$"; then
+        rm -f "$dest.primeagent-opencode.bak.tmp.$$"
+        die "could not write $dest.primeagent-opencode.bak"
+      fi
+      mv "$dest.primeagent-opencode.bak.tmp.$$" "$dest.primeagent-opencode.bak"
       warn "backed up existing $dest to $dest.primeagent-opencode.bak"
     elif ! cmp -s "$dest" "$src"; then
-      warn "$dest differs from the incoming file; original backup kept"
+      warn "$dest has local changes that will be overwritten; pre-install backup kept at $dest.primeagent-opencode.bak"
     fi
   fi
-  cp "$src" "$dest.tmp.$$" && mv "$dest.tmp.$$" "$dest"
+  if ! cp "$src" "$dest.tmp.$$"; then
+    rm -f "$dest.tmp.$$"
+    die "could not write $dest"
+  fi
+  mv "$dest.tmp.$$" "$dest"
 }
 
 install_file "$SRC/.opencode/agent/prime.md"             "$DEST/agent/prime.md"

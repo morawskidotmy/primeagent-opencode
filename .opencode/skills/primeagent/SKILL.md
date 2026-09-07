@@ -38,32 +38,34 @@ prime-agent --model anthropic/claude-sonnet-4-5 -p "Task"
 ## JSON event stream (scripted runs)
 
 ```bash
-prime-agent --mode json "Refactor the config module" 2>/dev/null \
+prime-agent --mode json "Refactor the config module" \
   | jq -c 'select(.type == "message_end")'
 ```
 
 First line is `{"type":"session",...}`; then `agent_start`, `tool_execution_start/end`,
 `message_end`, `agent_end` events. Parse `agent_end` for the final messages. `jq` is
-optional - without it, just `tail -n 50` the stream and read the tail.
+optional - without it, just `tail -n 50` the stream and read the tail. Stderr carries
+human-readable auth and CLI errors - do not discard it.
 
-## Sessions and background agents
+## Sessions, headless
 
 ```bash
-prime-agent -c                     # continue most recent session
-prime-agent -r <path|id>           # resume a saved session
-prime-agent agents                 # list running, idle, saved sessions
-prime-agent attach <agent>         # reattach to a running session (interactive)
+prime-agent list --json            # list sessions (add --all for saved ones)
+prime-agent -c -p "Next step..."   # continue most recent session, headless
+prime-agent -r <id> -p "Prompt"    # resume a saved session, headless
 prime-agent status                 # background service state
 prime-agent doctor [--fix]         # inspect/repair background services
-prime-agent shutdown [--force]     # stop all agents and services
 ```
 
-Sessions keep running when the invoking terminal exits; poll `prime-agent agents` to check
-progress instead of killing and restarting.
+`prime-agent agents`, `prime-agent attach <id>`, and bare `prime-agent` open the
+interactive TUI - suggest those to the user for their terminal; never run them from a
+script. Same for `prime-agent shutdown [--force]`: it stops every agent and background
+service, so suggest it to the user rather than running it yourself.
 
 ## Safety
 
 - Prime Agent executes model-generated Python and shell commands with full user permissions.
   Its kernel/worker processes are **not** a security sandbox.
 - Only delegate tasks in trusted repositories, and never paste secrets into prompts.
-- Run `prime-agent shutdown` when finished with background work.
+- If output reports an authentication or login error, stop and tell the user to run
+  `prime-agent` once interactively and complete `/login` - do not retry.

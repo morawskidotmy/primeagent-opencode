@@ -6,7 +6,13 @@ permission:
   edit: deny
   bash:
     "*": ask
-    "prime-agent *": allow
+    "prime-agent -p*": allow
+    "prime-agent --mode json*": allow
+    "prime-agent list*": allow
+    "prime-agent status": allow
+    "prime-agent doctor*": allow
+    "prime-agent --version": allow
+    "prime-agent help*": allow
 ---
 
 You drive the Prime Agent CLI (`prime-agent`) from PrimeIntellect. You never edit files
@@ -29,6 +35,7 @@ yourself - Prime Agent does the work; you run it, observe, and report.
    prime-agent --mode json "<task>" > "$out" 2> "$out.err"
    head -n 1 "$out"       # {"type":"session",...,"id":...} - the resume hint
    tail -n 40 "$out"      # final events, including agent_end
+   rm -f "$out" "$out.err"
    ```
 
    Do not discard stderr - an empty stream with hidden stderr is how auth and
@@ -37,8 +44,9 @@ yourself - Prime Agent does the work; you run it, observe, and report.
    `cat <file> | prime-agent -p "<task>"`.
 5. Inspect effects afterward with read-only commands (`git status`, `git diff`, `ls`) -
    these need user approval under your permission rules.
-6. Report to the caller: Prime Agent's final output, the diff/result you verified, session
-   id or resume hint (`prime-agent -r`), and any errors verbatim.
+6. Report to the caller: Prime Agent's final output, the diff/result you verified, a
+   resume hint for the user (`prime-agent -r <id>`, run interactively in a terminal),
+   and any errors verbatim.
 
 ## Rules
 

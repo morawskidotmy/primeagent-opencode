@@ -69,12 +69,14 @@ Once installed (after restarting OpenCode):
 Useful Prime Agent commands the skill covers:
 
 ```sh
-prime-agent -c                  # continue most recent session
-prime-agent agents              # list running, idle, and saved sessions
-prime-agent attach <agent>      # reattach to a running session
+prime-agent list --json         # list sessions (add --all for saved ones)
+prime-agent -c -p "Next step"   # continue most recent session, headless
+prime-agent -r <id> -p "Prompt" # resume a saved session, headless
+prime-agent status              # background service state
 prime-agent doctor [--fix]      # inspect or repair background services
-prime-agent shutdown [--force]  # stop every agent and service
 ```
+
+`prime-agent agents`, `attach`, and `shutdown` open or affect the interactive TUI and background services - those are for the user's own terminal.
 
 ## Uninstall
 
