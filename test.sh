@@ -12,7 +12,7 @@ step "syntax checks"
 sh -n install.sh || fail "install.sh syntax"
 sh -n uninstall.sh || fail "uninstall.sh syntax"
 
-tmp="$(mktemp -d)"
+tmp="$(mktemp -d "${TMPDIR:-/tmp}/primeagent-opencode-test.XXXXXXX")"
 trap 'rm -rf "$tmp"' EXIT INT TERM
 
 step "project install (fresh)"
@@ -38,6 +38,7 @@ printf '\n# user edit\n' >> "$tmp/proj/.opencode/agent/prime.md"
 step "project uninstall (restore backup)"
 ( cd "$tmp/proj" && sh "$REPO/uninstall.sh" --project >/dev/null )
 [ -f "$tmp/proj/.opencode/agent/prime.md" ] || fail "uninstall did not restore backed-up agent/prime.md"
+grep -q '# user edit' "$tmp/proj/.opencode/agent/prime.md" || fail "restored file lost the user's edit"
 [ ! -f "$tmp/proj/.opencode/skills/primeagent/SKILL.md" ] || fail "unmodified file should be plain-removed, not restored"
 [ ! -f "$tmp/proj/.opencode/command/prime.md" ] || fail "unmodified file should be plain-removed, not restored"
 [ ! -f "$tmp/proj/.opencode/agent/prime.md.primeagent-opencode.bak" ] || fail "backup not consumed by uninstall"

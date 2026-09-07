@@ -57,12 +57,12 @@ SRC=""
 if [ -f "$0" ] && [ -f "$(dirname "$0")/.opencode/agent/prime.md" ]; then
   SRC="$(cd "$(dirname "$0")" && pwd)"
 else
-  TMP="$(mktemp -d)"
+  TMP="$(mktemp -d "${TMPDIR:-/tmp}/primeagent-opencode.XXXXXXX")"
   trap 'rm -rf "$TMP"' EXIT INT TERM
   log "Fetching primeagent-opencode from GitHub..."
   curl -fsSL "$REPO_TARBALL" -o "$TMP/repo.tar.gz" \
     || die "could not download $REPO_TARBALL"
-  tar -xzf "$TMP/repo.tar.gz" -C "$TMP"
+  tar -xzf "$TMP/repo.tar.gz" -C "$TMP" || die "downloaded archive is corrupt; retry"
   SRC="$TMP/primeagent-opencode-main"
 fi
 [ -f "$SRC/.opencode/agent/prime.md" ] || die "integration files missing from $SRC"
@@ -75,7 +75,7 @@ if [ "$SKIP_PRIME" -eq 0 ]; then
     log "prime-agent CLI already installed: $(prime-agent --version 2>&1 || echo 'unknown version')"
   else
     log "Installing prime-agent CLI (PrimeIntellect official installer)..."
-    installer="$(mktemp)"
+    installer="$(mktemp "${TMPDIR:-/tmp}/primeagent-installer.XXXXXX")"
     if ! curl -fsSL "$OFFICIAL_INSTALLER" -o "$installer"; then
       rm -f "$installer"
       die "could not download $OFFICIAL_INSTALLER"
@@ -122,7 +122,10 @@ install_file() {
         rm -f "$dest.primeagent-opencode.bak.tmp.$$"
         die "could not write $dest.primeagent-opencode.bak"
       fi
-      mv "$dest.primeagent-opencode.bak.tmp.$$" "$dest.primeagent-opencode.bak"
+      if ! mv "$dest.primeagent-opencode.bak.tmp.$$" "$dest.primeagent-opencode.bak"; then
+        rm -f "$dest.primeagent-opencode.bak.tmp.$$"
+        die "could not create $dest.primeagent-opencode.bak"
+      fi
       warn "backed up existing $dest to $dest.primeagent-opencode.bak"
     else
       warn "$dest has local changes that will be overwritten; pre-install backup kept at $dest.primeagent-opencode.bak"

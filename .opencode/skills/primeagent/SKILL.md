@@ -44,10 +44,10 @@ prime-agent --mode json "Refactor the config module" \
 
 First line is `{"type":"session",...}`; then `agent_start`, `tool_execution_start/end`,
 `message_end`, `agent_end` events. Parse `agent_end` for the final messages. `jq` is
-optional - without it, just `tail -n 50` the stream and read the tail. Stderr carries
-human-readable auth and CLI errors - do not discard it. Note the pipe hides prime-agent's
-exit status: treat a stream with no `agent_end` (or empty output plus stderr) as failure,
-or capture to a file first.
+optional - without it, just `tail -n 50` the stream and read the tail. Note the pipe hides
+prime-agent's exit status, and piping through `jq` needs its own approval - prefer
+capturing to a file, as the `prime` subagent does. Stderr carries human-readable auth and
+CLI errors - do not discard it.
 
 ## Sessions, headless
 

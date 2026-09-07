@@ -11,7 +11,7 @@ permission:
     "prime-agent --mode json*": allow
     "prime-agent list*": allow
     "prime-agent status": allow
-    "prime-agent doctor*": allow
+    "prime-agent doctor": allow
     "prime-agent --version": allow
     "prime-agent help*": allow
 ---
@@ -32,7 +32,7 @@ yourself - Prime Agent does the work; you run it, observe, and report.
    recover the session id:
 
    ```bash
-   out="$(mktemp)"
+   out="$(mktemp "${TMPDIR:-/tmp}/prime-agent-out.XXXXXX")"
    prime-agent --mode json "<task>" > "$out" 2> "$out.err"
    head -n 1 "$out"       # {"type":"session",...,"id":...} - the resume hint
    tail -n 40 "$out"      # final events, including agent_end
@@ -41,7 +41,8 @@ yourself - Prime Agent does the work; you run it, observe, and report.
    ```
 
    If the stream is empty, read the stderr file before deleting it - that is
-   where auth and CLI errors appear.
+   where auth and CLI errors appear. The inspection helpers and the cleanup
+   here are outside the auto-allow rules, so they will ask for approval.
 4. When the task references files or prior output, feed them via stdin redirect so the
    whole statement stays auto-approved: `prime-agent -p "<task>" < <file>`.
 5. Inspect effects afterward with read-only commands (`git status`, `git diff`, `ls`) -

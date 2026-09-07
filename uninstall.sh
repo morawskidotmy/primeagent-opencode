@@ -19,18 +19,26 @@ else
   DEST="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
 fi
 
+log() { printf '==> %s\n' "$*"; }
+warn() { printf 'warning: %s\n' "$*" >&2; }
+
 FILES="agent/prime.md skills/primeagent/SKILL.md command/prime.md"
 removed=0
 for f in $FILES; do
   if [ -f "$DEST/$f" ]; then
     if [ -f "$DEST/$f.primeagent-opencode.bak" ]; then
-      mv "$DEST/$f.primeagent-opencode.bak" "$DEST/$f"
-      echo "restored backup: $DEST/$f"
-    else
-      rm "$DEST/$f"
+      if mv "$DEST/$f.primeagent-opencode.bak" "$DEST/$f"; then
+        echo "restored backup: $DEST/$f"
+      else
+        warn "could not restore $DEST/$f from its backup"
+      fi
+      removed=1
+    elif rm "$DEST/$f" 2>/dev/null; then
       echo "removed: $DEST/$f"
+      removed=1
+    else
+      warn "could not remove $DEST/$f"
     fi
-    removed=1
   fi
 done
 
