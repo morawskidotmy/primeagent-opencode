@@ -23,21 +23,23 @@ log() { printf '==> %s\n' "$*"; }
 warn() { printf 'warning: %s\n' "$*" >&2; }
 
 FILES="agent/prime.md skills/primeagent/SKILL.md command/prime.md"
-removed=0
+found=0
+failed=0
 for f in $FILES; do
   if [ -f "$DEST/$f" ]; then
+    found=1
     if [ -f "$DEST/$f.primeagent-opencode.bak" ]; then
       if mv "$DEST/$f.primeagent-opencode.bak" "$DEST/$f"; then
         echo "restored backup: $DEST/$f"
       else
         warn "could not restore $DEST/$f from its backup"
+        failed=1
       fi
-      removed=1
     elif rm "$DEST/$f" 2>/dev/null; then
       echo "removed: $DEST/$f"
-      removed=1
     else
       warn "could not remove $DEST/$f"
+      failed=1
     fi
   fi
 done
@@ -47,9 +49,11 @@ for d in "$DEST/command" "$DEST/skills/primeagent" "$DEST/skills" "$DEST/agent";
   rmdir "$d" 2>/dev/null || true
 done
 
-if [ "$removed" -eq 0 ]; then
+if [ "$found" -eq 0 ]; then
   echo "Nothing to uninstall in $DEST."
 fi
-
-echo "Restart OpenCode for changes to take effect."
+if [ "$found" -eq 1 ]; then
+  echo "Restart OpenCode for changes to take effect."
+fi
 echo "The prime-agent CLI was kept. To remove it, see https://github.com/PrimeIntellect-ai/prime-agent"
+[ "$failed" -eq 0 ] || exit 1
