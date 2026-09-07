@@ -67,15 +67,13 @@ esac
 
 step "failed copy leaves no temp litter"
 mkdir -p "$tmp/litter"
-if ( cd "$tmp/litter" && ulimit -f 0 && echo probe > .probe ) 2>/dev/null; then
-  rm -f "$tmp/litter/.probe"
+if ( cd "$tmp/litter" && ulimit -f 0 ) 2>/dev/null; then
   if ( cd "$tmp/litter" && ulimit -f 0 && sh "$REPO/install.sh" --project --skip-prime >/dev/null 2>&1 ); then
     fail "expected install to fail under ulimit -f 0"
   fi
   [ -z "$(find "$tmp/litter" -name '*.tmp.*' 2>/dev/null)" ] || fail "temp litter left behind"
 else
-  rm -f "$tmp/litter/.probe"
-  echo "   skipped: ulimit -f 0 not enforced here"
+  echo "   skipped: ulimit -f 0 not supported here"
 fi
 
 step "global install (fake XDG_CONFIG_HOME)"
