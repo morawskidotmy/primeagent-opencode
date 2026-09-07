@@ -161,5 +161,7 @@ Done. Next steps:
      run /prime <task>, or spawn the `prime` subagent.
   3. First interactive launch of the CLI itself: run `prime-agent`, then /login.
 
-Uninstall: curl -fsSL https://raw.githubusercontent.com/morawskidotmy/primeagent-opencode/main/uninstall.sh | sh
+Uninstall integration:  curl -fsSL https://raw.githubusercontent.com/morawskidotmy/primeagent-opencode/main/uninstall.sh | sh
+Remove everything (also the prime-agent CLI):
+                        curl -fsSL https://raw.githubusercontent.com/morawskidotmy/primeagent-opencode/main/uninstall.sh | sh -s -- --all
 EOF

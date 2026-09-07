@@ -81,7 +81,12 @@ prime-agent doctor [--fix]      # inspect or repair background services
 ## Uninstall
 
 ```sh
+# Remove the OpenCode integration (the prime-agent CLI stays)
 curl -fsSL https://raw.githubusercontent.com/morawskidotmy/primeagent-opencode/main/uninstall.sh | sh
+
+# Remove everything: stops background services and also uninstalls the
+# prime-agent CLI (volta/npm package, user-local binary, state directories)
+curl -fsSL https://raw.githubusercontent.com/morawskidotmy/primeagent-opencode/main/uninstall.sh | sh -s -- --all
 ```
 
-Restores backed-up files, removes the integration, and leaves the `prime-agent` CLI installed. Add `--project` for project-scope removal: `curl -fsSL .../uninstall.sh | sh -s -- --project`.
+Restores backed-up files, removes the integration, and reports anything it could not remove. `--project` composes with both forms for project-scope removal (`sh -s -- --all --project`).

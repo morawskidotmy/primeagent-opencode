@@ -98,6 +98,29 @@ step "self-install is a clean no-op"
 sh "$REPO/install.sh" --project --skip-prime >/dev/null
 [ ! -f .opencode/agent/prime.md.primeagent-opencode.bak ] || fail "self-install created a stray backup"
 
+step "uninstall --all removes the CLI (stubbed volta)"
+mkdir -p "$tmp/fakebin" "$tmp/allhome/.config"
+cat > "$tmp/fakebin/volta" <<'STUB'
+#!/bin/sh
+case "$1" in
+  list) echo "package prime-agent@0.9.3 / prime-agent (default)" ;;
+  uninstall) echo "volta-uninstall:$2" >> "${FAKE_LOG:?}" ;;
+esac
+STUB
+cat > "$tmp/fakebin/prime-agent" <<'STUB'
+#!/bin/sh
+echo "prime-agent:$*" >> "${FAKE_LOG:?}"
+STUB
+chmod 755 "$tmp/fakebin/volta" "$tmp/fakebin/prime-agent"
+( cd "$tmp/allhome" && PATH="$tmp/fakebin:$PATH" XDG_CONFIG_HOME="$tmp/allhome/.config" FAKE_LOG="$tmp/fake.log" \
+  sh "$REPO/install.sh" --skip-prime >/dev/null )
+: > "$tmp/fake.log"
+( PATH="$tmp/fakebin:$PATH" XDG_CONFIG_HOME="$tmp/allhome/.config" FAKE_LOG="$tmp/fake.log" \
+  sh "$REPO/uninstall.sh" --all >/dev/null )
+grep -q "prime-agent:shutdown --force" "$tmp/fake.log" || fail "--all did not stop background services"
+grep -q "volta-uninstall:prime-agent" "$tmp/fake.log" || fail "--all did not uninstall the volta package"
+[ ! -f "$tmp/allhome/.config/opencode/agent/prime.md" ] || fail "--all left integration files behind"
+
 step "tarball layout matches installer expectations"
 if git ls-files --error-unmatch .opencode/agent/prime.md >/dev/null 2>&1; then
   git archive --format=tar.gz --prefix=primeagent-opencode-main/ -o "$tmp/repo.tar.gz" HEAD
